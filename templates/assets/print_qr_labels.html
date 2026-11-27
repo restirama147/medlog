@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Label QR Code Aset Medik ({{ total_count }} Unit)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 20px;
+        }
+
+        /* Toolbar Kontrol Cetak */
+        .no-print {
+            max-width: 900px;
+            margin: 0 auto 20px auto;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-print {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-print:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-back {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Container Label Grid */
+        .label-grid {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        /* Kotak Label Aset */
+        .asset-label {
+            background: white;
+            border: 2px solid #0f172a;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            page-break-inside: avoid;
+            position: relative;
+        }
+
+        /* Kop kecil Rumah Sakit */
+        .label-badge {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #334155;
+            letter-spacing: 0.5px;
+        }
+
+        .qr-wrapper {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-img {
+            width: 105px;
+            height: 105px;
+            display: block;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .qr-caption {
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-top: 4px;
+            color: #2563eb;
+            text-transform: uppercase;
+        }
+
+        .label-info {
+            flex-grow: 1;
+            overflow: hidden;
+            padding-right: 15px;
+        }
+
+        .label-app-title {
+            font-size: 0.7rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .label-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .label-brand {
+            font-size: 0.8rem;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .label-meta-table {
+            font-size: 0.78rem;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .label-meta-table td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        .meta-label {
+            color: #64748b;
+            font-weight: 600;
+            width: 75px;
+        }
+
+        .meta-value {
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        /* Setup untuk Print Kertas */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .label-grid {
+                max-width: 100%;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .asset-label {
+                border: 1.5px solid #000;
+                box-shadow: none;
+                margin-bottom: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Bar Kontrol Di Layar -->
+    <div class="no-print">
+        <div>
+            <h2 style="font-size: 1.15rem; margin-bottom: 4px;">🏷️ Cetak Label QR Code Peralatan Medik</h2>
+            <p style="font-size: 0.85rem; color: #64748b;">
+                Menyiapkan <strong>{{ total_count }} label</strong> stiker siap cetak. Scan QR code untuk mengakses info aset, sertifikat kalibrasi, &amp; SPO secara publik.
+            </p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="{% url 'assets:view' %}" class="btn-back">⬅️ Kembali ke Katalog</a>
+            <button class="btn-print" onclick="window.print()">
+                🖨️ Cetak / Print Sekarang
+            </button>
+        </div>
+    </div>
+
+    <!-- Lembar Cetak Label -->
+    <div class="label-grid">
+        {% for item in labels %}
+        <div class="asset-label">
+            <span class="label-badge">{{ item.asset.code }}</span>
+            <div class="qr-wrapper">
+                <img src="data:image/png;base64,{{ item.qr_b64 }}" alt="QR Code" class="qr-img">
+                <span class="qr-caption">Scan Info &amp; SPO</span>
+            </div>
+            <div class="label-info">
+                <div class="label-app-title">IPSRS &bull; Medlog</div>
+                <div class="label-name">{{ item.asset.name }}</div>
+                <div class="label-brand">{{ item.asset.full_brand }}</div>
+                
+                <table class="label-meta-table">
+                    <tr>
+                        <td class="meta-label">No. Seri (SN):</td>
+                        <td class="meta-value">{{ item.asset.serial_number|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Lokasi:</td>
+                        <td class="meta-value">{{ item.asset.location }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Kalibrasi:</td>
+                        <td class="meta-value" style="color: {{ item.asset.calib_color }};">
+                            {{ item.asset.calib_label }} ({{ item.asset.calibration_expiry|date:"M Y"|default:"-" }})
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% empty %}
+        <div style="grid-column: span 2; text-align: center; padding: 40px; background: white; border-radius: 8px;">
+            <p style="color: #64748b;">Tidak ada data aset yang dipilih untuk dicetak.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>

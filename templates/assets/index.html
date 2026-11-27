@@ -1,0 +1,1538 @@
+{% extends 'base.html' %}
+
+{% block title %}Assets{% endblock %}
+
+{% block css %}
+<style>
+    :root {
+        /* Color Palette */
+        --bg-body: #f3f4f6;
+        --bg-card: #ffffff;
+        --primary: #1e293b;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+
+        /* Status Colors */
+        --danger: #ef4444;
+        --danger-bg: #fef2f2;
+        --warning: #f59e0b;
+        --warning-bg: #fffbeb;
+        --success: #10b981;
+        --success-bg: #ecfdf5;
+    }
+
+    /* ==========================================
+    1. RESET & LAYOUT DASAR WORKSPACE
+    ========================================== */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .workspace {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .top-header {
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--bg-card);
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .top-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .search-container {
+        position: relative;
+        width: 280px;
+    }
+
+    .search-container input {
+        width: 100%;
+        padding: 8px 12px 8px 36px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        outline: none;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .filter-select {
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        outline: none;
+        background: white;
+        cursor: pointer;
+    }
+
+    .main-container {
+        padding: 24px;
+    }
+
+    .view-section {
+        display: block;
+    }
+
+    /* ==========================================
+    2. ELEMEN TABEL & KOMPONEN KATALOG ASET
+    ========================================== */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-card);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .data-table th, 
+    .data-table td {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 0.88rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table th {
+        background-color: #f8fafc;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .status-pill.success { background-color: var(--success-bg); color: var(--success); }
+    .status-pill.danger { background-color: var(--danger-bg); color: var(--danger); }
+    .status-pill.warning { background-color: var(--warning-bg); color: var(--warning); }
+
+    .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.2s ease;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-clear {
+        padding: 4px 10px;
+        background-color: var(--danger);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    /* ==========================================
+    3. MODAL POPUP, FORM, & NAVIGATION TAB
+    ========================================== */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+    }
+
+    .modal-container {
+        background: white;
+        border-radius: 12px;
+        width: 95%;
+        max-width: 950px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+    .modal-header h3 {
+        font-size: 1.1rem;
+        color: var(--text-main);
+    }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        color: var(--text-muted);
+    }
+
+    .modal-tabs {
+        display: flex;
+        background: #f1f5f9;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-color);
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .modal-tabs::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .modal-tabs::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    .tab-btn {
+        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 6px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .tab-btn.active {
+        background: white;
+        color: var(--accent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-body {
+        padding: 20px;
+        flex-grow: 1;
+    }
+
+    .modal-tab-content {
+        display: none;
+    }
+
+    .modal-tab-content.active {
+        display: block;
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .action-card {
+        border: 1px solid var(--border-color);
+        padding: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #fafafa;
+    }
+
+    .action-card:hover {
+        border-color: var(--accent);
+        background: #eff6ff;
+    }
+
+    .action-card h4 {
+        font-size: 0.95rem;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .action-card p {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    /* Detail Info List Tab */
+    .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed var(--border-color);
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: var(--text-muted);
+    }
+
+    .info-value {
+        font-weight: 600;
+    }
+
+    /* Layout Form Input Modal */
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .form-group input, 
+    .form-group select, 
+    .form-group textarea {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        outline: none;
+    }
+
+    .form-group input:focus, 
+    .form-group select:focus, 
+    .form-group textarea:focus {
+        border-color: var(--accent);
+    }
+
+    /* Form Tabel Khusus Perbaikan Korektif */
+    .form-section-title {
+        background-color: #1a4a72;
+        color: white;
+        padding: 8px 12px;
+        margin-top: 15px;
+        font-weight: bold;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .table-form {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+    }
+
+    .table-form th, 
+    .table-form td {
+        border: 1px solid #ccc;
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+
+    .table-form input, 
+    .table-form select, 
+    .table-form textarea {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+
+    /* ==========================================
+    4. RESPONSIVE MEDIA QUERIES
+    ========================================== */
+    @media (max-width: 1024px) {
+        .form-grid-2,
+        .action-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Main Workspace -->
+    <main class="workspace">
+        <header class="top-header">
+            <div class="top-title" id="pageTitle">Katalog Aset &amp; Peralatan Medik</div>
+            <div class="header-actions">
+                <select class="filter-select" id="roomFilter" onchange="filterDataByRoom()">
+                    <option value="ALL">Semua Ruangan</option>
+                    <option value="ICU">Ruang ICU</option>
+                    <option value="OK">Kamar Bedah (OK)</option>
+                    <option value="IGD">IGD</option>
+                    <option value="POLI">Poliklinik</option>
+                    <option value="RANAP">Rawat Inap</option>
+                </select>
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="globalSearch" placeholder="Cari aset, no seri, atau lokasi..." onkeyup="filterAssets()">
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <section id="equipmentView" class="view-section active">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="margin: 0;">Katalog Aset &amp; Peralatan Medik</h3>
+                        <span id="selectedCountBadge" style="display:none; background:#dbeafe; color:#1d4ed8; font-size:0.78rem; font-weight:700; padding:3px 10px; border-radius:12px;">0 terpilih</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-action" onclick="printBulkQRLabels()" style="background: #0f766e; color: white; padding: 8px 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                            <span>🏷️</span> Cetak Label QR Code Massal
+                        </button>
+                        <button class="btn-action btn-primary" onclick="openAddAssetModal()" style="padding: 8px 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                            <span>➕</span> Tambah Aset Baru
+                        </button>
+                    </div>
+                </div>
+                
+                <table class="data-table" id="assetTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" title="Pilih Semua Aset">
+                            </th>
+                            <th>Nama Alat</th>
+                            <th>Merk / Tipe</th>
+                            <th>No. Seri</th>
+                            <th>Lokasi</th>
+                            <th>Status Kinerja</th>
+                            <th>Kalibrasi</th>
+                            <th style="width: 150px; text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                        <tr data-name="{{ asset.name }}" data-brand="{{ asset.full_brand }}" data-sn="{{ asset.serial_number }}" data-location="{{ asset.location }}" data-assetid="{{ asset.code }}" data-id="{{ asset.id }}">
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="asset-checkbox" value="{{ asset.id }}" onchange="updateSelectedCount()">
+                            </td>
+                            <td><strong>{{ asset.name }}</strong></td>
+                            <td>{{ asset.full_brand }}</td>
+                            <td>{{ asset.serial_number|default:"-" }}</td>
+                            <td>{{ asset.location }}</td>
+                            <td><span class="status-pill {{ asset.status_css }}"><span class="dot"></span> {{ asset.status_label }}</span></td>
+                            <td><span style="color:{{ asset.calib_color }}; font-weight:600;">{{ asset.calib_label }}</span></td>
+                            <td style="text-align: center; white-space: nowrap;">
+                                <button class="btn-action btn-primary" style="padding: 4px 8px; font-size: 0.78rem;" onclick="openAssetModal(this)">Buka Form</button>
+                                <a href="{% url 'assets:print_labels' %}?ids={{ asset.id }}" target="_blank" class="btn-action" style="background:#0f766e; color:white; padding: 4px 8px; font-size: 0.78rem; text-decoration:none;" title="Cetak Label QR Code Aset Ini">
+                                    🏷️ QR
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 25px; color: var(--text-muted);">
+                                Belum ada peralatan medik yang terdaftar.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <!-- ASSET ACTION MODAL POPUP -->
+    <div class="modal-overlay" id="assetModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalAssetName">Ventilator Carefusion LVT-1200</h3>
+                    <div style="font-size:0.75rem; color:var(--text-muted);" id="modalAssetMeta">SN: E75267 | Lokasi: Ruang ICU</div>
+                </div>
+                <button class="btn-close-modal" onclick="closeAssetModal()">&times;</button>
+            </div>
+
+            <!-- Modal Tab Navigation -->
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="switchModalTab('tabMainForm', this)">📝 Form Maintenance</button>
+                <button class="tab-btn" onclick="switchModalTab('tabHistoryForm', this)">📜 Riwayat Form Maintenance</button>
+                <button class="tab-btn" onclick="switchModalTab('tabHistoryCalib', this)">📅 Riwayat Kalibrasi</button>
+                <button class="tab-btn" onclick="switchModalTab('tabSPO', this)">📖 SPO</button>
+                <button class="tab-btn" onclick="switchModalTab('tabCert', this)">📜 Sertifikat Kalibrasi</button>
+                <button class="tab-btn" onclick="switchModalTab('tabInfo', this)">ℹ️ Informasi Data Alat</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- TAB 1: FORM MAINTENANCE OPTIONS -->
+                <div id="tabMainForm" class="modal-tab-content active">
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">Pilih jenis pekerjaan pemeliharaan yang akan dilakukan pada unit ini:</p>
+                    <div class="action-grid">
+                        <div class="action-card" onclick="window.location.href='/maintenance/?asset_id=' + (currentSelectedAsset.id || '')">
+                            <h4>⚙️ Maintenance Preventif Rutin</h4>
+                            <p>Lembar kerja pemeriksaan fisik, kelistrikan, &amp; pengujian fungsi berkala.</p>
+                        </div>
+                        <div class="action-card" onclick="closeAssetModal(); openCorrectiveModal();">
+                            <h4>🛠️ Tindakan Perbaikan / Korektif</h4>
+                            <p>Pencatatan trobel, penggantian suku cadang, dan perbaikan alat rusak.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: RIWAYAT FORM MAINTENANCE -->
+                <div id="tabHistoryForm" class="modal-tab-content">
+                    <h4 style="margin-bottom:10px; font-size:0.9rem;">Rekam Riwayat Pemeliharaan Alat</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>No. Work Order</th>
+                                <th>Tanggal</th>
+                                <th>Jenis Pemeliharaan</th>
+                                <th>Teknisi / Vendor</th>
+                                <th>Status Hasil</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalFormHistoryBody">
+                            <tr>
+                                <td>WO-ICU-202611</td>
+                                <td>06 Nov 2026</td>
+                                <td>Preventif Rutin</td>
+                                <td>Rega Kurniawan</td>
+                                <td><span class="status-pill success"><span class="dot"></span> Layak Pakai</span></td>
+                                <td><button class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem;" onclick="alert('Membuka PDF WO-ICU-202611...')">PDF</button></td>
+                            </tr>
+                            <tr>
+                                <td>WO-ICU-202609</td>
+                                <td>12 Sep 2026</td>
+                                <td>Perbaikan Korektif</td>
+                                <td>PT Medika Teknindo</td>
+                                <td><span class="status-pill success"><span class="dot"></span> Selesai (Ganti Filter)</span></td>
+                                <td><button class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem;" onclick="alert('Membuka PDF WO-ICU-202609...')">PDF</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 3: RIWAYAT KALIBRASI -->
+                <div id="tabHistoryCalib" class="modal-tab-content">
+                    <h4 style="margin-bottom:10px; font-size:0.9rem;">Rekam Pengujian &amp; Kalibrasi Berkala</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tgl Pengujian</th>
+                                <th>Lembaga Penguji</th>
+                                <th>No. Sertifikat</th>
+                                <th>Hasil Kinerja</th>
+                                <th>Masa Berlaku</th>
+                                <th>Tgl Unggah</th>
+                                <th>Sertifikat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalCalibHistoryBody">
+                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:15px;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 4: SPO -->
+                <div id="tabSPO" class="modal-tab-content">
+                    <!-- Upload Form SPO -->
+                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:16px; margin-bottom:16px;">
+                        <h4 style="margin-bottom:12px; font-size:0.9rem; color:#0369a1;">📤 Unggah Dokumen SPO Baru</h4>
+                        <form id="spoUploadForm" enctype="multipart/form-data">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Judul SPO *</label>
+                                    <input type="text" id="spo_title" placeholder="Contoh: SPO Pengoperasian Ventilator" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Versi *</label>
+                                    <input type="text" id="spo_version" value="1.0" placeholder="Contoh: 1.0 / Rev. 2" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">File PDF SPO *</label>
+                                <input type="file" id="spo_file" accept=".pdf" style="width:100%; padding:6px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem; background:white;">
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Catatan Revisi</label>
+                                <textarea id="spo_notes" rows="2" placeholder="Contoh: Revisi penambahan langkah safety check sebelum power on..." style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem; resize:vertical;"></textarea>
+                            </div>
+                            <button type="button" onclick="uploadSPODocument()" style="background:var(--accent); color:white; border:none; padding:8px 20px; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer;">📤 Unggah Dokumen SPO</button>
+                        </form>
+                    </div>
+                    <!-- Riwayat SPO -->
+                    <h4 style="margin-bottom:10px; font-size:0.9rem;">📄 Riwayat Revisi SPO</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tgl Unggah</th>
+                                <th>Judul SPO</th>
+                                <th>Versi</th>
+                                <th>Catatan Revisi</th>
+                                <th>Diunggah Oleh</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalSPOHistoryBody">
+                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:15px;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 5: SERTIFIKAT KALIBRASI (Upload) -->
+                <div id="tabCert" class="modal-tab-content">
+                    <!-- Upload Form Sertifikat -->
+                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:16px; margin-bottom:16px;">
+                        <h4 style="margin-bottom:12px; font-size:0.9rem; color:#92400e;">📜 Unggah Sertifikat Kalibrasi Baru</h4>
+                        <form id="calibUploadForm" enctype="multipart/form-data">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Tanggal Kalibrasi *</label>
+                                    <input type="date" id="calib_test_date" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Masa Berlaku *</label>
+                                    <input type="date" id="calib_valid_until" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Lembaga / Vendor Penguji *</label>
+                                    <input type="text" id="calib_institution" placeholder="Contoh: BPFK Surakarta / PT. Metrologi Medis" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">No. Sertifikat *</label>
+                                    <input type="text" id="calib_cert_no" placeholder="Contoh: CERT-BPFK-99212" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                </div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Hasil Kalibrasi</label>
+                                    <select id="calib_result" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+                                        <option value="Lolos Kalibrasi">✅ Lolos Kalibrasi</option>
+                                        <option value="Tidak Lolos">❌ Tidak Lolos Kalibrasi</option>
+                                        <option value="Perlu Penyesuaian">⚠️ Perlu Penyesuaian</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">File Sertifikat PDF *</label>
+                                    <input type="file" id="calib_file" accept=".pdf,.jpg,.jpeg,.png" style="width:100%; padding:5px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem; background:white;">
+                                </div>
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Catatan Tambahan</label>
+                                <textarea id="calib_notes" rows="2" placeholder="Catatan kondisi alat saat dikalibrasi..." style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem; resize:vertical;"></textarea>
+                            </div>
+                            <button type="button" onclick="uploadCalibCertificate()" style="background:#d97706; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer;">📤 Unggah Sertifikat Kalibrasi</button>
+                        </form>
+                    </div>
+                    <!-- Riwayat Sertifikat di Tab ini -->
+                    <h4 style="margin-bottom:8px; font-size:0.9rem;">📋 Riwayat Sertifikat Diunggah</h4>
+                    <div id="certUploadHistoryList" style="font-size:0.85rem; color:var(--text-muted);">
+                        <p style="text-align:center; padding:10px;">Memuat data...</p>
+                    </div>
+                </div>
+
+                <!-- TAB 6: INFORMASI DATA ALAT -->
+                <div id="tabInfo" class="modal-tab-content">
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">Nama Perangkat:</span><span class="info-value" id="infoName">Ventilator Carefusion LVT-1200</span></div>
+                        <div class="info-row"><span class="info-label">Nomor Seri (SN):</span><span class="info-value" id="infoSN">E75267</span></div>
+                        <div class="info-row"><span class="info-label">ID Aset Rumah Sakit:</span><span class="info-value" id="infoAssetID">AST-ICU-005</span></div>
+                        <div class="info-row"><span class="info-label">Lokasi Penempatan:</span><span class="info-value" id="infoLoc">Ruang ICU</span></div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <strong style="color: #166534; font-size: 0.9rem;">🏷️ Label &amp; Link Publik QR Code</strong>
+                            <p style="font-size: 0.8rem; color: #15803d; margin-top: 2px;">
+                                Cetak label fisik atau buka halaman informasi publik (Sertifikat &amp; SPO)
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a id="btnPublicInfo" href="#" target="_blank" class="btn-action" style="background: #2563eb; color: white; padding: 6px 14px; font-size: 0.8rem; text-decoration: none;">
+                                🌐 Buka Halaman Publik
+                            </a>
+                            <a id="btnPrintSingleLabel" href="#" target="_blank" class="btn-action" style="background: #0f766e; color: white; padding: 6px 14px; font-size: 0.8rem; text-decoration: none;">
+                                🖨️ Cetak Label QR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM TAMBAH ASET BARU -->
+    <div class="modal-overlay" id="addAssetModal" style="display: none;">
+        <div class="modal-container" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>➕ Form Tambah Aset Peralatan Medik Baru</h3>
+                <button class="btn-close-modal" onclick="closeAddAssetModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addAssetForm">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>ID Aset / Kode Inventaris *</label>
+                            <input type="text" id="new_asset_id" placeholder="Contoh: AST-ICU-015" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Peralatan *</label>
+                            <input type="text" id="new_asset_name" placeholder="Contoh: Patient Monitor" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Merk &amp; Tipe/Model *</label>
+                            <input type="text" id="new_asset_brand" placeholder="Contoh: Mindray uMEC 10" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nomor Seri (SN) *</label>
+                            <input type="text" id="new_asset_sn" placeholder="Contoh: SN-8839201" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Kategori Peralatan Medik *</label>
+                            <select id="new_asset_category" required>
+                                <option value="">-- Pilih Kategori Alkes --</option>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Lokasi Penempatan *</label>
+                            <select id="new_asset_location" required>
+                                <option value="Ruang ICU">Ruang ICU</option>
+                                <option value="Kamar Bedah (OK)">Kamar Bedah (OK)</option>
+                                <option value="IGD">IGD</option>
+                                <option value="Poliklinik">Poliklinik</option>
+                                <option value="Rawat Inap">Rawat Inap</option>
+                                <option value="Radiologi">Radiologi</option>
+                                <option value="Laboratorium">Laboratorium</option>
+                                <option value="Rawat Inap 2">Rawat Inap 2</option>
+                                <option value="VK">VK</option>
+                                <option value="Perina">Perina</option>
+                                <option value="HD">HD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Tahun Pemasangan</label>
+                            <input type="number" id="new_asset_year" placeholder="2026" value="2026">
+                        </div>
+                        <div class="form-group">
+                            <label>Status Kinerja Awal</label>
+                            <select id="new_asset_status">
+                                <option value="Layak Pakai">Layak Pakai</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Perbaikan">Butuh Perbaikan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status Kalibrasi</label>
+                        <select id="new_asset_calib">
+                            <option value="Aktif">Aktif / Terkalibrasi</option>
+                            <option value="Proses">Proses Didaftarkan</option>
+                            <option value="Expired">Expired</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn-action btn-primary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="saveNewAsset()">💾 Simpan Data Aset</button>
+                        <button type="button" class="btn-action" style="background: #64748b; color: white; padding: 10px 20px;" onclick="closeAddAssetModal()">Batal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM TINDAKAN PERBAIKAN / KOREKTIF -->
+    <div class="modal-overlay" id="correctiveModal" style="display: none;">
+        <div class="modal-container" style="max-width: 950px;">
+            <div class="modal-header" style="background: #fff5f5; border-bottom: 1px solid #fee2e2;">
+                <div>
+                    <h3 style="color: var(--danger); display: flex; align-items: center; gap: 8px;">
+                        🛠️ Form Tindakan Perbaikan / Korektif
+                    </h3>
+                    <div style="font-size:0.75rem; color:var(--text-muted);" id="correctiveAssetMeta">
+                        SN: E75267 | Lokasi: Ruang ICU | ID: AST-ICU-005
+                    </div>
+                </div>
+                <button class="btn-close-modal" onclick="closeCorrectiveModal()">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 20px;">
+                <form id="correctiveForm">
+                    <div class="form-section-title" style="background-color: #b91c1c;">Bagian 1: Laporan Kerusakan / Masalah</div>
+                    <table class="table-form">
+                        <tr>
+                            <td style="width: 20%;"><strong>No. Perbaikan:</strong></td>
+                            <td style="width: 30%;"><input type="text" id="cor_no_wo" value="CM-ICU-202611-01" readonly style="background: #f8fafc;"></td>
+                            <td style="width: 20%;"><strong>Tanggal Lapor:</strong></td>
+                            <td style="width: 30%;"><input type="date" id="cor_tgl_lapor" value="2026-11-06"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Nama Alat:</strong></td>
+                            <td><input type="text" id="cor_nama_alat" readonly style="background: #f8fafc;"></td>
+                            <td><strong>Pelapor / Ruangan:</strong></td>
+                            <td><input type="text" id="cor_pelapor" placeholder="Nama Perawat / Ka. Ruang"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>No. Seri (SN):</strong></td>
+                            <td><input type="text" id="cor_sn" readonly style="background: #f8fafc;"></td>
+                            <td><strong>Tingkat Urgensi:</strong></td>
+                            <td>
+                                <select id="cor_urgency" style="font-weight: bold; color: #b91c1c;">
+                                    <option value="high">🔴 Tinggi / Emergency (Breakdown)</option>
+                                    <option value="medium">🟡 Sedang (Fungsi Terbatas)</option>
+                                    <option value="low">🟢 Rendah (Minor / Estetika)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="4">
+                                <strong>Deskripsi Kerusakan / Keluhan User:</strong>
+                                <textarea id="cor_deskripsi" rows="2" style="margin-top: 5px;" placeholder="Contoh: Alat tiba-tiba mati saat digunakan, alarm baterai terus berbunyi..."></textarea>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="form-section-title" style="background-color: #1a4a72;">Bagian 2: Diagnosa &amp; Analisa Kerusakan</div>
+                    <table class="table-form">
+                        <tr>
+                            <td style="width: 25%;"><strong>Inti Kerusakan (Root Cause):</strong></td>
+                            <td><input type="text" id="cor_root_cause" placeholder="Contoh: Power supply bermasalah / Baterai backup aus / Kabel konektor putus"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tindakan Perbaikan:</strong></td>
+                            <td><textarea id="cor_tindakan" rows="2" placeholder="Contoh: Penggantian modul power supply, pembersihan konektor internal, dan kalibrasi ulang parameter..."></textarea></td>
+                        </tr>
+                    </table>
+
+                    <div class="form-section-title" style="background-color: #1a4a72;">Bagian 3: Penggantian Suku Cadang / Komponen</div>
+                    <table class="table-form" id="partReplacementTable">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th>Nama Komponen / Sparepart</th>
+                                <th style="width: 100px;">Jumlah</th>
+                                <th style="width: 140px;">No. Seri Sparepart</th>
+                                <th style="width: 60px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="text" placeholder="Contoh: Filter Udara / Battery 12V"></td>
+                                <td><input type="number" value="1" min="1" style="text-align: center;"></td>
+                                <td><input type="text" placeholder="SN Part"></td>
+                                <td style="text-align: center;">
+                                    <button type="button" class="btn-clear" onclick="removePartRow(this)" style="padding: 3px 8px;">✕</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn-action btn-primary" onclick="addPartRow()" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 10px;">+ Tambah Suku Cadang</button>
+
+                    <div class="form-section-title" style="background-color: #1a4a72;">Bagian 4: Status Akhir &amp; Pengesahan</div>
+                    <table class="table-form">
+                        <tr>
+                            <td style="width: 30%;"><strong>Status Setelah Perbaikan:</strong></td>
+                            <td>
+                                <select id="cor_status_akhir" style="font-weight: bold;">
+                                    <option value="Layak Pakai" style="color: var(--success);">✅ Berhasil Diperbaiki (Layak Pakai)</option>
+                                    <option value="Pending Part">⏳ Menunggu Suku Cadang (Pending Part)</option>
+                                    <option value="Afkir / Rusak Berat" style="color: var(--danger);">❌ Tidak Dapat Diperbaiki (Rekomendasi Afkir)</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn-action btn-primary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="saveCorrectiveForm()">💾 Simpan &amp; Update Status Alat</button>
+                        <button type="button" class="btn-action" style="background: #64748b; color: white; padding: 10px 20px;" onclick="closeCorrectiveModal()">Batal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    let currentSelectedAsset = {};
+
+    // Pencarian Global Katalog Aset
+    function filterAssets() {
+        const query = document.getElementById('globalSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#assetTable tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    // Filter Berdasarkan Ruangan
+    function filterDataByRoom() {
+        const room = document.getElementById('roomFilter').value;
+        const rows = document.querySelectorAll('#assetTable tbody tr');
+        rows.forEach(row => {
+            const locationText = row.getAttribute('data-location') || '';
+            if (room === 'ALL') {
+                row.style.display = '';
+            } else if (room === 'ICU' && locationText.includes('ICU')) {
+                row.style.display = '';
+            } else if (room === 'OK' && (locationText.includes('OK') || locationText.includes('Bedah'))) {
+                row.style.display = '';
+            } else if (room === 'IGD' && locationText.includes('IGD')) {
+                row.style.display = '';
+            } else if (room === 'POLI' && locationText.includes('Poliklinik')) {
+                row.style.display = '';
+            } else if (room === 'RANAP' && locationText.includes('Rawat Inap')) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function getCsrfToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Modal Action Handler (Buka Form Detail)
+    function openAssetModal(btn) {
+        const tr = btn.closest('tr');
+        currentSelectedAsset = {
+            id: tr.getAttribute('data-id'),
+            name: tr.getAttribute('data-name'),
+            brand: tr.getAttribute('data-brand'),
+            sn: tr.getAttribute('data-sn'),
+            location: tr.getAttribute('data-location'),
+            assetId: tr.getAttribute('data-assetid')
+        };
+
+        document.getElementById('modalAssetName').textContent = currentSelectedAsset.name + ' - ' + currentSelectedAsset.brand;
+        document.getElementById('modalAssetMeta').textContent = `SN: ${currentSelectedAsset.sn} | Lokasi: ${currentSelectedAsset.location} | ID: ${currentSelectedAsset.assetId}`;
+
+        document.getElementById('infoName').textContent = currentSelectedAsset.name + ' ' + currentSelectedAsset.brand;
+        document.getElementById('infoSN').textContent = currentSelectedAsset.sn;
+        document.getElementById('infoAssetID').textContent = currentSelectedAsset.assetId;
+        document.getElementById('infoLoc').textContent = currentSelectedAsset.location;
+
+        const btnPublic = document.getElementById('btnPublicInfo');
+        const btnPrintSingle = document.getElementById('btnPrintSingleLabel');
+        if (btnPublic) btnPublic.href = `/assets/p/${currentSelectedAsset.id}/`;
+        if (btnPrintSingle) btnPrintSingle.href = `/assets/labels/print/?ids=${currentSelectedAsset.id}`;
+
+        // Fetch detail dan riwayat langsung dari backend database
+        if (currentSelectedAsset.id) {
+            fetch(`/assets/${currentSelectedAsset.id}/api/`)
+                .then(res => res.json())
+                .then(data => {
+                    // Update SPO jika ada
+                    const spoEl = document.getElementById('tabSPO');
+                    if (spoEl && data.spo_text) {
+                        spoEl.innerHTML = `
+                            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid var(--border-color); font-size:0.85rem; line-height:1.6;">
+                                <h4 style="margin-bottom:8px; color:var(--primary);">Standar Prosedur Operasional (SPO) Pengoperasian Alat</h4>
+                                <div style="white-space: pre-line;">${data.spo_text}</div>
+                            </div>
+                        `;
+                    }
+
+                    // Update Riwayat Form Maintenance
+                    const formHistBody = document.getElementById('modalFormHistoryBody');
+                    if (formHistBody) {
+                        if (data.maintenances && data.maintenances.length > 0) {
+                            formHistBody.innerHTML = data.maintenances.map(m => `
+                                <tr>
+                                    <td><strong>${m.wo_no}</strong></td>
+                                    <td>${m.date}</td>
+                                    <td>${m.type}</td>
+                                    <td>${m.technician}</td>
+                                    <td><span class="status-pill ${m.status_css}"><span class="dot"></span> ${m.status}</span></td>
+                                    <td><a href="/maintenance/${m.id}/" class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem; text-decoration:none;">PDF / Detail</a></td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            formHistBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada rekam riwayat maintenance pada alat ini.</td></tr>`;
+                        }
+                    }
+
+                    // Update Riwayat Kalibrasi
+                    const calibHistBody = document.getElementById('modalCalibHistoryBody');
+                    if (calibHistBody) {
+                        if (data.calibrations && data.calibrations.length > 0) {
+                            calibHistBody.innerHTML = data.calibrations.map(c => `
+                                <tr>
+                                    <td>${c.test_date}</td>
+                                    <td>${c.institution}</td>
+                                    <td><strong>${c.certificate_no}</strong></td>
+                                    <td><span class="status-pill success"><span class="dot"></span> ${c.result}</span></td>
+                                    <td>${c.valid_until}</td>
+                                    <td>${c.upload_date || '-'}</td>
+                                    <td>${c.cert_url ? `<a href="${c.cert_url}" target="_blank" class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem; text-decoration:none;">📄 Buka PDF</a>` : '<span style="color:var(--text-muted)">Tidak ada file</span>'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            calibHistBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada rekam pengujian kalibrasi berkala.</td></tr>`;
+                        }
+                    }
+
+                    // Update riwayat SPO
+                    const spoHistBody = document.getElementById('modalSPOHistoryBody');
+                    if (spoHistBody) {
+                        if (data.spo_records && data.spo_records.length > 0) {
+                            spoHistBody.innerHTML = data.spo_records.map(s => `
+                                <tr>
+                                    <td>${s.uploaded_at}</td>
+                                    <td><strong>${s.title}</strong></td>
+                                    <td><span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-size:0.78rem;font-weight:600;">${s.version}</span></td>
+                                    <td style="color:var(--text-muted);font-size:0.82rem;">${s.notes || '-'}</td>
+                                    <td>${s.uploaded_by}</td>
+                                    <td>${s.file_url ? `<a href="${s.file_url}" target="_blank" class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem; text-decoration:none;">📄 Buka PDF</a>` : '<span style="color:var(--text-muted)">Tidak ada file</span>'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            spoHistBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada dokumen SPO yang diunggah.</td></tr>`;
+                        }
+                    }
+
+                    // Update cert upload history list di tab Sertifikat
+                    const certList = document.getElementById('certUploadHistoryList');
+                    if (certList) {
+                        if (data.calibrations && data.calibrations.length > 0) {
+                            certList.innerHTML = data.calibrations.map(c => `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; background:white;">
+                                    <div>
+                                        <strong style="font-size:0.88rem;">${c.certificate_no}</strong>
+                                        <span style="color:var(--text-muted); font-size:0.78rem; margin-left:8px;">${c.institution} &bull; ${c.test_date}</span>
+                                        <br><span style="font-size:0.78rem; color:var(--text-muted);">Diunggah: ${c.upload_date || '-'} &bull; Berlaku s.d. ${c.valid_until}</span>
+                                    </div>
+                                    <div>
+                                        ${c.cert_url ? `<a href="${c.cert_url}" target="_blank" class="btn-action btn-primary" style="padding:4px 12px; font-size:0.78rem; text-decoration:none;">📄 Buka PDF</a>` : '<span style="color:var(--text-muted); font-size:0.78rem;">Tidak ada file</span>'}
+                                    </div>
+                                </div>
+                            `).join('');
+                        } else {
+                            certList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:10px;">Belum ada sertifikat yang diunggah.</p>`;
+                        }
+                    }
+                })
+                .catch(err => console.error("Error fetching live asset details:", err));
+        }
+
+        const firstTabBtn = document.querySelector('.modal-tabs .tab-btn');
+        switchModalTab('tabMainForm', firstTabBtn);
+
+        document.getElementById('assetModal').style.display = 'flex';
+    }
+
+    function closeAssetModal() {
+        document.getElementById('assetModal').style.display = 'none';
+    }
+
+    function switchModalTab(tabId, btn) {
+        document.querySelectorAll('.modal-tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.modal-tabs .tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        if (btn) btn.classList.add('active');
+    }
+
+    // Modal Tambah Aset Baru
+    function openAddAssetModal() {
+        document.getElementById('addAssetModal').style.display = 'flex';
+    }
+
+    function closeAddAssetModal() {
+        document.getElementById('addAssetModal').style.display = 'none';
+        document.getElementById('addAssetForm').reset();
+    }
+
+    function saveNewAsset() {
+        const assetId = document.getElementById('new_asset_id').value.trim();
+        const name = document.getElementById('new_asset_name').value.trim();
+        const brand = document.getElementById('new_asset_brand').value.trim();
+        const sn = document.getElementById('new_asset_sn').value.trim();
+        const categoryId = document.getElementById('new_asset_category').value;
+        const location = document.getElementById('new_asset_location').value;
+        const year = document.getElementById('new_asset_year').value;
+        const statusKinerja = document.getElementById('new_asset_status').value;
+        const statusKalib = document.getElementById('new_asset_calib').value;
+
+        if (!assetId || !name || !brand || !sn) {
+            alert('Harap isi semua bidang wajib (*)!');
+            return;
+        }
+
+        const payload = {
+            code: assetId,
+            name: name,
+            brand: brand,
+            sn: sn,
+            category_id: categoryId,
+            location: location,
+            year: year,
+            status: statusKinerja,
+            calibration_status: statusKalib,
+        };
+
+        fetch('/assets/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const a = data.asset;
+                const tbody = document.querySelector('#assetTable tbody');
+                
+                // Hapus empty row jika ada
+                if (tbody.children.length === 1 && tbody.children[0].children.length === 1) {
+                    tbody.innerHTML = '';
+                }
+
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-name', a.name);
+                tr.setAttribute('data-brand', a.brand);
+                tr.setAttribute('data-sn', a.sn);
+                tr.setAttribute('data-location', a.location);
+                tr.setAttribute('data-assetid', a.code);
+                tr.setAttribute('data-id', a.id);
+
+                tr.innerHTML = `
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="asset-checkbox" value="${a.id}" onchange="updateSelectedCount()">
+                    </td>
+                    <td><strong>${a.name}</strong></td>
+                    <td>${a.brand}</td>
+                    <td>${a.sn}</td>
+                    <td>${a.location}</td>
+                    <td><span class="status-pill ${a.status_css}"><span class="dot"></span> ${a.status_label}</span></td>
+                    <td><span style="color:${a.calib_color}; font-weight:600;">${a.calib_label}</span></td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        <button class="btn-action btn-primary" style="padding: 4px 8px; font-size: 0.78rem;" onclick="openAssetModal(this)">Buka Form</button>
+                        <a href="/assets/labels/print/?ids=${a.id}" target="_blank" class="btn-action" style="background:#0f766e; color:white; padding: 4px 8px; font-size: 0.78rem; text-decoration:none;" title="Cetak Label QR Code Aset Ini">
+                            🏷️ QR
+                        </a>
+                    </td>
+                `;
+
+                tbody.insertBefore(tr, tbody.firstChild);
+                alert(data.message);
+                closeAddAssetModal();
+            } else {
+                alert('Gagal menyimpan aset: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error creating asset:", err);
+            alert('Terjadi kesalahan koneksi saat menyimpan aset!');
+        });
+    }
+
+    // Modal Tindakan Perbaikan / Korektif
+    function openCorrectiveModal(assetData) {
+        const data = assetData || currentSelectedAsset;
+        
+        document.getElementById('correctiveAssetMeta').textContent = 
+            `SN: ${data.sn || '-'} | Lokasi: ${data.location || '-'} | ID: ${data.assetId || '-'}`;
+        
+        document.getElementById('cor_nama_alat').value = (data.name || '') + ' ' + (data.brand || '');
+        document.getElementById('cor_sn').value = data.sn || '-';
+        document.getElementById('cor_no_wo').value = 'CM-' + (data.location || 'ALT').substring(0, 3).toUpperCase() + '-' + Date.now().toString().slice(-6);
+
+        document.getElementById('correctiveModal').style.display = 'flex';
+    }
+
+    function closeCorrectiveModal() {
+        document.getElementById('correctiveModal').style.display = 'none';
+    }
+
+    // Dinamis Tabel Suku Cadang pada Form Perbaikan
+    function addPartRow() {
+        const tbody = document.querySelector('#partReplacementTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" placeholder="Nama Komponen / Sparepart" class="part-name"></td>
+            <td><input type="number" value="1" min="1" style="text-align: center;" class="part-qty"></td>
+            <td><input type="text" placeholder="SN Part" class="part-sn"></td>
+            <td style="text-align: center;">
+                <button type="button" class="btn-clear" onclick="removePartRow(this)" style="padding: 3px 8px;">✕</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function removePartRow(btn) {
+        const row = btn.closest('tr');
+        const tbody = document.querySelector('#partReplacementTable tbody');
+        if (tbody.children.length > 1) {
+            row.remove();
+        } else {
+            alert('Minimal harus ada 1 baris suku cadang.');
+        }
+    }
+
+    function uploadCalibCertificate() {
+        if (!currentSelectedAsset || !currentSelectedAsset.id) {
+            alert('Silakan buka modal aset terlebih dahulu!');
+            return;
+        }
+        const testDate = document.getElementById('calib_test_date').value;
+        const validUntil = document.getElementById('calib_valid_until').value;
+        const institution = document.getElementById('calib_institution').value.trim();
+        const certNo = document.getElementById('calib_cert_no').value.trim();
+        const result = document.getElementById('calib_result').value;
+        const notes = document.getElementById('calib_notes').value.trim();
+        const fileInput = document.getElementById('calib_file');
+
+        if (!testDate || !validUntil || !institution || !certNo) {
+            alert('Harap isi semua kolom wajib: tanggal kalibrasi, masa berlaku, lembaga penguji, dan no. sertifikat!');
+            return;
+        }
+        if (!fileInput.files.length) {
+            alert('Harap pilih file sertifikat PDF!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('test_date', testDate);
+        formData.append('valid_until', validUntil);
+        formData.append('institution', institution);
+        formData.append('certificate_no', certNo);
+        formData.append('result', result);
+        formData.append('notes', notes);
+        formData.append('certificate_file', fileInput.files[0]);
+
+        fetch(`/assets/${currentSelectedAsset.id}/calibration/upload/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                document.getElementById('calibUploadForm').reset();
+                // Tambah ke daftar riwayat sertifikat di tab Sertifikat
+                const certList = document.getElementById('certUploadHistoryList');
+                const r = data.record;
+                const newItem = document.createElement('div');
+                newItem.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; background:white;';
+                newItem.innerHTML = `
+                    <div>
+                        <strong style="font-size:0.88rem;">${r.certificate_no}</strong>
+                        <span style="color:var(--text-muted); font-size:0.78rem; margin-left:8px;">${r.institution} &bull; ${r.test_date}</span>
+                        <br><span style="font-size:0.78rem; color:var(--text-muted);">Diunggah: ${r.upload_date} &bull; Berlaku s.d. ${r.valid_until}</span>
+                    </div>
+                    <div>
+                        ${r.cert_url ? `<a href="${r.cert_url}" target="_blank" class="btn-action btn-primary" style="padding:4px 12px; font-size:0.78rem; text-decoration:none;">📄 Buka PDF</a>` : ''}
+                    </div>
+                `;
+                if (certList.querySelector('p')) certList.innerHTML = '';
+                certList.insertBefore(newItem, certList.firstChild);
+                // Tambah ke tabel riwayat kalibrasi
+                const calibHistBody = document.getElementById('modalCalibHistoryBody');
+                if (calibHistBody) {
+                    const noRow = calibHistBody.querySelector('td[colspan]');
+                    if (noRow) calibHistBody.innerHTML = '';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${r.test_date}</td>
+                        <td>${r.institution}</td>
+                        <td><strong>${r.certificate_no}</strong></td>
+                        <td><span class="status-pill success"><span class="dot"></span> ${r.result}</span></td>
+                        <td>${r.valid_until}</td>
+                        <td>${r.upload_date}</td>
+                        <td><a href="${r.cert_url}" target="_blank" class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem; text-decoration:none;">📄 Buka PDF</a></td>
+                    `;
+                    calibHistBody.insertBefore(tr, calibHistBody.firstChild);
+                }
+            } else {
+                alert('Gagal mengunggah sertifikat: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error upload calibration:", err);
+            alert('Terjadi kesalahan saat mengunggah sertifikat!');
+        });
+    }
+
+    function uploadSPODocument() {
+        if (!currentSelectedAsset || !currentSelectedAsset.id) {
+            alert('Silakan buka modal aset terlebih dahulu!');
+            return;
+        }
+        const title = document.getElementById('spo_title').value.trim();
+        const version = document.getElementById('spo_version').value.trim();
+        const notes = document.getElementById('spo_notes').value.trim();
+        const fileInput = document.getElementById('spo_file');
+
+        if (!title) {
+            alert('Harap isi judul SPO!');
+            return;
+        }
+        if (!fileInput.files.length) {
+            alert('Harap pilih file PDF SPO!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('version', version);
+        formData.append('notes', notes);
+        formData.append('spo_file', fileInput.files[0]);
+
+        fetch(`/assets/${currentSelectedAsset.id}/spo/upload/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                document.getElementById('spoUploadForm').reset();
+                // Tambah ke tabel riwayat SPO
+                const spoHistBody = document.getElementById('modalSPOHistoryBody');
+                if (spoHistBody) {
+                    const noRow = spoHistBody.querySelector('td[colspan]');
+                    if (noRow) spoHistBody.innerHTML = '';
+                    const r = data.record;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${r.uploaded_at}</td>
+                        <td><strong>${r.title}</strong></td>
+                        <td><span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-size:0.78rem;font-weight:600;">${r.version}</span></td>
+                        <td style="color:var(--text-muted);font-size:0.82rem;">${r.notes || '-'}</td>
+                        <td>${r.uploaded_by}</td>
+                        <td><a href="${r.file_url}" target="_blank" class="btn-action btn-primary" style="padding:2px 8px; font-size:0.75rem; text-decoration:none;">📄 Buka PDF</a></td>
+                    `;
+                    spoHistBody.insertBefore(tr, spoHistBody.firstChild);
+                }
+            } else {
+                alert('Gagal mengunggah SPO: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error upload SPO:", err);
+            alert('Terjadi kesalahan saat mengunggah dokumen SPO!');
+        });
+    }
+
+    function saveCorrectiveForm() {
+        if (!currentSelectedAsset || !currentSelectedAsset.id) {
+            alert('Data aset belum dipilih!');
+            return;
+        }
+
+        const woNo = document.getElementById('cor_no_wo').value;
+        const tglLapor = document.getElementById('cor_tgl_lapor').value;
+        const pelapor = document.getElementById('cor_pelapor').value.trim();
+        const urgency = document.getElementById('cor_urgency').value;
+        const deskripsi = document.getElementById('cor_deskripsi').value.trim();
+        const rootCause = document.getElementById('cor_root_cause').value.trim();
+        const tindakan = document.getElementById('cor_tindakan').value.trim();
+        const statusAkhir = document.getElementById('cor_status_akhir').value;
+
+        // Ambil suku cadang
+        const spareparts = [];
+        const partRows = document.querySelectorAll('#partReplacementTable tbody tr');
+        partRows.forEach(row => {
+            const name = row.querySelector('.part-name') ? row.querySelector('.part-name').value.trim() : row.querySelector('input[type="text"]').value.trim();
+            const qty = row.querySelector('.part-qty') ? row.querySelector('.part-qty').value : row.querySelector('input[type="number"]').value;
+            const sn = row.querySelectorAll('input[type="text"]')[1] ? row.querySelectorAll('input[type="text"]')[1].value.trim() : '';
+            if (name) {
+                spareparts.push({ name: name, qty: qty, sn: sn });
+            }
+        });
+
+        const payload = {
+            asset_id: currentSelectedAsset.id,
+            code: currentSelectedAsset.assetId,
+            sn: currentSelectedAsset.sn,
+            wo_no: woNo,
+            tgl_lapor: tglLapor,
+            pelapor: pelapor,
+            urgency: urgency,
+            deskripsi: deskripsi,
+            root_cause: rootCause,
+            tindakan: tindakan,
+            status_akhir: statusAkhir,
+            spareparts: spareparts
+        };
+
+        fetch('/assets/corrective/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                closeCorrectiveModal();
+                // Reload halaman untuk memperbarui status kinerja dan riwayat
+                window.location.reload();
+            } else {
+                alert('Gagal menyimpan perbaikan: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error saving corrective action:", err);
+            alert('Terjadi kesalahan koneksi saat menyimpan laporan perbaikan!');
+        });
+    }
+
+    // Pemilihan & Pencetakan Label QR Massal
+    function toggleSelectAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.asset-checkbox');
+        checkboxes.forEach(cb => {
+            const tr = cb.closest('tr');
+            if (tr && tr.style.display !== 'none') {
+                cb.checked = masterCheckbox.checked;
+            }
+        });
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.asset-checkbox:checked');
+        const badge = document.getElementById('selectedCountBadge');
+        if (badge) {
+            if (selected.length > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = `${selected.length} terpilih`;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function printBulkQRLabels() {
+        const selected = document.querySelectorAll('.asset-checkbox:checked');
+        let ids = [];
+        selected.forEach(cb => ids.push(cb.value));
+
+        const room = document.getElementById('roomFilter') ? document.getElementById('roomFilter').value : 'ALL';
+
+        if (ids.length > 0) {
+            // Cetak hanya aset yang diceklis
+            window.open(`/assets/labels/print/?ids=${ids.join(',')}`, '_blank');
+        } else {
+            // Konfirmasi cetak semua aset atau berdasarkan filter ruangan
+            const filterNotice = room !== 'ALL' ? `di ${room}` : 'di semua ruangan';
+            if (confirm(`Anda belum mencentang kotak aset tertentu.\nApakah ingin mencetak label QR Code untuk seluruh aset ${filterNotice}?`)) {
+                window.open(`/assets/labels/print/?room=${room}`, '_blank');
+            }
+        }
+    }
+</script>
+{% endblock %}

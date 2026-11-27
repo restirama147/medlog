@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ asset.name }} - Informasi Aset Medis | Medlog</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+            margin-bottom: 16px;
+        }
+
+        .header-card .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header-card h1 {
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+        }
+
+        .header-card .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 580px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .status-badge.success {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .status-badge.warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .status-badge.danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: #eff6ff;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .table-custom th {
+            text-align: left;
+            padding: 8px 10px;
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-custom td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 24px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Card -->
+        <div class="header-card">
+            <span class="badge">🏥 Rumah Sakit Islam - Medlog System</span>
+            <h1>{{ asset.name }}</h1>
+            <div class="subtitle">
+                Merk: <strong>{{ asset.full_brand }}</strong> | SN: <strong>{{ asset.serial_number|default:"-" }}</strong>
+            </div>
+        </div>
+
+        <!-- Spesifikasi & Lokasi Aset -->
+        <div class="card">
+            <div class="card-title">ℹ️ Identitas &amp; Status Peralatan</div>
+            <div class="grid-2">
+                <div class="info-item">
+                    <span class="info-label">ID / Kode Inventaris</span>
+                    <span class="info-value">{{ asset.code }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Kategori Peralatan</span>
+                    <span class="info-value">{{ asset.category.name|default:"Peralatan Medik" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Nomor Seri (Serial Number)</span>
+                    <span class="info-value">{{ asset.serial_number|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Lokasi Penempatan</span>
+                    <span class="info-value">📍 {{ asset.location }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Tahun Pemasangan</span>
+                    <span class="info-value">{{ asset.installation_year|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status Kinerja</span>
+                    <span class="status-badge {{ asset.status_css }}">
+                        ● {{ asset.status_label }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bagian Sertifikat Kalibrasi -->
+        <div class="card">
+            <div class="card-title">📜 Sertifikat Kalibrasi &amp; Uji Kelayakan</div>
+            {% if latest_calibration %}
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                <div class="grid-2" style="margin-bottom: 12px;">
+                    <div class="info-item">
+                        <span class="info-label">No. Sertifikat Aktif</span>
+                        <span class="info-value">{{ latest_calibration.certificate_no }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Lembaga / Vendor Penguji</span>
+                        <span class="info-value">{{ latest_calibration.testing_institution }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Tanggal Pengujian</span>
+                        <span class="info-value">{{ latest_calibration.test_date|date:"d M Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Masa Berlaku Kalibrasi</span>
+                        <span class="info-value" style="color: {{ asset.calib_color }}; font-weight: 700;">
+                            {{ latest_calibration.valid_until|date:"d M Y" }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Hasil Kalibrasi</span>
+                        <span class="info-value">{{ latest_calibration.result }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Tanggal Unggah</span>
+                        <span class="info-value">{{ latest_calibration.created_at|date:"d M Y H:i"|default:"-" }}</span>
+                    </div>
+                </div>
+
+                {% if latest_calibration.certificate_file %}
+                <a href="{{ latest_calibration.certificate_file.url }}" target="_blank" class="btn">
+                    📄 Buka / Unduh File Sertifikat Kalibrasi (PDF)
+                </a>
+                {% else %}
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Berkas sertifikat belum diunggah secara digital.</span>
+                {% endif %}
+            </div>
+
+            {% if calibrations|length > 1 %}
+            <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase;">Riwayat Kalibrasi Sebelumnya</h4>
+            <div style="overflow-x: auto;">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Tgl Uji</th>
+                            <th>No. Sertifikat</th>
+                            <th>Lembaga</th>
+                            <th>Masa Berlaku</th>
+                            <th>Dokumen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in calibrations %}
+                        <tr>
+                            <td>{{ c.test_date|date:"d M Y" }}</td>
+                            <td><strong>{{ c.certificate_no }}</strong></td>
+                            <td>{{ c.testing_institution }}</td>
+                            <td>{{ c.valid_until|date:"d M Y" }}</td>
+                            <td>
+                                {% if c.certificate_file %}
+                                <a href="{{ c.certificate_file.url }}" target="_blank" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;">PDF</a>
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 15px;">
+                Belum ada data sertifikat kalibrasi yang diunggah untuk alat ini.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Bagian Standar Prosedur Operasional (SPO) -->
+        <div class="card">
+            <div class="card-title">📖 Standar Prosedur Operasional (SPO)</div>
+            
+            {% if latest_spo %}
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div>
+                        <strong style="font-size: 0.95rem; color: #0369a1;">{{ latest_spo.title }}</strong>
+                        <span style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; margin-left: 6px;">
+                            Versi {{ latest_spo.version }}
+                        </span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">
+                        Diunggah: {{ latest_spo.uploaded_at|date:"d M Y" }}
+                    </span>
+                </div>
+                {% if latest_spo.notes %}
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+                    Catatan: {{ latest_spo.notes }}
+                </p>
+                {% endif %}
+
+                {% if latest_spo.file %}
+                <a href="{{ latest_spo.file.url }}" target="_blank" class="btn" style="background: #0284c7;">
+                    📄 Buka Dokumen SPO Resmi (PDF)
+                </a>
+                {% endif %}
+            </div>
+
+            {% if spo_records|length > 1 %}
+            <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase;">Riwayat Versi SPO</h4>
+            <div style="overflow-x: auto;">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Versi</th>
+                            <th>Judul Dokumen</th>
+                            <th>Tgl Unggah</th>
+                            <th>Catatan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in spo_records %}
+                        <tr>
+                            <td><span style="background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:600;">{{ s.version }}</span></td>
+                            <td><strong>{{ s.title }}</strong></td>
+                            <td>{{ s.uploaded_at|date:"d M Y" }}</td>
+                            <td style="color:var(--text-muted); font-size:0.8rem;">{{ s.notes|default:"-" }}</td>
+                            <td>
+                                {% if s.file %}
+                                <a href="{{ s.file.url }}" target="_blank" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;">Lihat PDF</a>
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% elif asset.spo_text %}
+            <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; line-height: 1.6; white-space: pre-line;">
+                {{ asset.spo_text }}
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 15px;">
+                Belum ada dokumen atau panduan SPO yang diunggah untuk unit ini.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Bagian Riwayat Maintenance Preventif Rutin -->
+        <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>⚙️</span> Riwayat Maintenance Preventif Rutin
+                </div>
+                <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 3px 10px; border-radius: 12px; font-weight: 700;">
+                    {{ total_preventive }} Catatan
+                </span>
+            </div>
+
+            {% if preventive_records %}
+            <div style="overflow-x: auto;">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>No. Work Order</th>
+                            <th>Tanggal</th>
+                            <th>Teknisi IPSRS</th>
+                            <th>Status Hasil</th>
+                            <th>Catatan / Keterangan</th>
+                            <th style="text-align: center;">Lembar Kerja</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in preventive_records %}
+                        <tr>
+                            <td><strong>{{ m.work_order_no }}</strong></td>
+                            <td>{{ m.date|date:"d M Y" }}</td>
+                            <td>{% if m.technician_name %}{{ m.technician_name }}{% elif m.technician %}{{ m.technician.get_full_name|default:m.technician.username }}{% else %}Teknisi IPSRS{% endif %}</td>
+                            <td>
+                                <span class="status-badge {{ m.status_css }}">
+                                    ● {{ m.result_status }}
+                                </span>
+                            </td>
+                            <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 220px;">
+                                {{ m.notes|default:"Pemeriksaan fisik & pengujian fungsi rutin."|truncatechars:80 }}
+                            </td>
+                            <td style="text-align: center;">
+                                <a href="{% url 'maintenance:detail' m.id %}" target="_blank" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+                                    📄 Buka PDF
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 15px;">
+                Belum ada data rekam maintenance preventif pada unit alat ini.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Bagian Riwayat Tindakan Perbaikan / Korektif -->
+        <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>🛠️</span> Riwayat Tindakan Perbaikan / Korektif
+                </div>
+                <span style="font-size: 0.75rem; background: #fef2f2; color: #b91c1c; padding: 3px 10px; border-radius: 12px; font-weight: 700;">
+                    {{ total_corrective }} Catatan
+                </span>
+            </div>
+
+            {% if corrective_records %}
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                {% for c in corrective_records %}
+                <div style="background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
+                        <div>
+                            <strong style="color: #b91c1c; font-size: 0.95rem;">{{ c.work_order_no }}</strong>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 8px;">
+                                📅 {{ c.date|date:"d M Y" }} &bull; Pelapor: <strong>{{ c.reporter_name|default:"Ruangan" }}</strong>
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="status-badge {{ c.status_css }}">
+                                ● {{ c.result_status }}
+                            </span>
+                            <a href="{% url 'maintenance:detail' c.id %}" target="_blank" class="btn" style="padding: 4px 10px; font-size: 0.75rem; background: #b91c1c;">
+                                📄 Lembar Kerja PDF
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="font-size: 0.85rem; margin-bottom: 10px;">
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Keluhan User / Kerusakan:</span>
+                            <div style="color: var(--text); margin-top: 2px;">{{ c.damage_description|default:"-" }}</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Inti Kerusakan (Root Cause):</span>
+                            <div style="color: var(--text); margin-top: 2px;">{{ c.root_cause|default:"-" }}</div>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Tindakan Perbaikan:</span>
+                            <div style="color: var(--text); margin-top: 2px;">{{ c.action_taken|default:"-" }}</div>
+                        </div>
+                    </div>
+
+                    {% if c.spareparts.all %}
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase;">🔩 Penggantian Suku Cadang:</span>
+                        <ul style="margin: 4px 0 0 18px; font-size: 0.8rem; color: var(--text);">
+                            {% for part in c.spareparts.all %}
+                            <li>
+                                <strong>{{ part.part_name }}</strong> &bull; Jumlah: {{ part.quantity }} unit
+                                {% if part.serial_number %}(SN: {{ part.serial_number }}){% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 15px;">
+                Belum ada catatan laporan perbaikan korektif pada unit alat ini.
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="footer-note">
+            Sistem Informasi Manajemen Peralatan Medis &amp; Kalibrasi (Medlog System)<br>
+            Instalasi Pemeliharaan Sarana Rumah Sakit (IPSRS)
+        </div>
+    </div>
+</body>
+</html>

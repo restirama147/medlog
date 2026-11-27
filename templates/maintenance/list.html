@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Riwayat Work Order Pemeliharaan{% endblock %}
+
+{% block content %}
+<main class="workspace">
+    <header class="top-header">
+        <div class="top-title" id="pageTitle">Riwayat Work Order Pemeliharaan & Perbaikan</div>
+        <div class="header-actions">
+            <a href="{% url 'maintenance:view' %}" class="btn-action btn-primary" style="padding: 8px 16px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                <span>➕</span> Buat Form Baru
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <section class="view-section active">
+            <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>No. Work Order</th>
+                            <th>Aset / Peralatan</th>
+                            <th>Jenis Pekerjaan</th>
+                            <th>Tanggal</th>
+                            <th>Teknisi / Pelaksana</th>
+                            <th>Hasil / Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td><strong>{{ record.work_order_no }}</strong></td>
+                            <td>
+                                <strong>{{ record.asset.name }}</strong>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                    {{ record.asset.code }} | {{ record.asset.location }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if record.maintenance_type == 'preventive' %}
+                                    <span style="color: var(--accent); font-weight: 600;">⚙️ Preventif Rutin</span>
+                                {% else %}
+                                    <span style="color: var(--danger); font-weight: 600;">🛠️ Perbaikan Korektif</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.date|date:"d M Y" }}</td>
+                            <td>{{ record.technician_name|default:record.technician.get_full_name|default:"-" }}</td>
+                            <td>
+                                <span class="status-pill {{ record.status_css }}">
+                                    <span class="dot"></span> {{ record.result_status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'maintenance:detail' record.id %}" class="btn-action btn-primary" style="padding: 4px 10px; font-size: 0.8rem; text-decoration: none;">
+                                    🖨️ Cetak / Detail
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                                Belum ada catatan riwayat pemeliharaan / perbaikan.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}

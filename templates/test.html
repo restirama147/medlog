@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Maintenance Alat Kesehatan (Ruang ICU)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        /* Styling Kop Surat */
+        .header-kop {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header-kop h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #000;
+        }
+        .header-kop h2 {
+            margin: 4px 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #000;
+        }
+        .header-kop h4 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #000;
+        }
+        .line-kop {
+            border: 0;
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #000;
+            height: 3px;
+            margin: 12px 0 20px 0;
+        }
+
+        .section-header {
+            background-color: #1a4a72;
+            color: white;
+            padding: 8px 12px;
+            margin-top: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+        th {
+            background-color: #f0f4f8;
+        }
+        input[type="text"], input[type="date"], input[type="time"], select, textarea {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.88rem;
+        }
+
+        /* Grid TTD Layar / Website */
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .signature-card {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            background: #fafafa;
+        }
+        .signature-card h4 {
+            margin: 0 0 8px 0;
+            color: #1a4a72;
+        }
+        .canvas-wrapper {
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+        canvas {
+            width: 100%;
+            height: 120px;
+            border: 1px dashed #666;
+            background-color: #fff;
+            border-radius: 4px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .btn-clear {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .btn-pdf {
+            padding: 10px 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-submit {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Responsive Layar HP */
+        @media screen and (max-width: 768px) {
+            .signature-grid {
+                grid-template-columns: 1fr;
+            }
+            .data-alat-table td {
+                display: block;
+                width: 100%;
+            }
+            .data-alat-table tr {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 5px;
+            }
+        }
+
+        /* STYLES KHUSUS PRINT / CETAK PDF (Tetap Rapi & Tidak Berubah Format) */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+                width: 100%;
+            }
+            .btn-pdf, .btn-clear, .btn-submit {
+                display: none !important;
+            }
+
+            /* Memaksa Data Alat Tetap 2 Kolom Kiri-Kanan */
+            .data-alat-table {
+                display: table !important;
+                width: 100% !important;
+            }
+            .data-alat-table tr {
+                display: table-row !important;
+            }
+            .data-alat-table td {
+                display: table-cell !important;
+                width: 25% !important;
+            }
+
+            /* Memaksa TTD Tetap Berdampingan Kiri-Kanan */
+            .signature-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 15px !important;
+                page-break-inside: avoid;
+            }
+            .signature-card {
+                background: #fff !important;
+                border: 1px solid #999 !important;
+            }
+
+            /* Hapus Border Input Saat Ditinggalkan Cetak */
+            input[type="text"], input[type="date"], input[type="time"], select, textarea {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                font-weight: bold;
+            }
+            select {
+                appearance: none;
+                -webkit-appearance: none;
+            }
+            .section-header {
+                background-color: #1a4a72 !important;
+                color: white !important;
+            }
+            canvas {
+                border: 1px solid #ccc !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-actions">
+        <button type="button" class="btn-pdf" onclick="window.print()">Cetak / Unduh PDF</button>
+    </div>
+
+    <!-- Kop Surat -->
+    <div class="header-kop">
+        <h3>Instalasi Pemeliharaan Sarana Rumah Sakit</h3>
+        <h2>Lembar Tugas Pemeliharaan Peralatan Medik</h2>
+        <h4>RSI Gunungkidul</h4>
+        <div class="line-kop"></div>
+    </div>
+
+    <form action="#" method="post" id="maintenanceForm">
+        
+        <!-- Bagian 1 -->
+        <div class="section-header">Bagian 1: Data Alat</div>
+        <div class="table-responsive">
+            <table class="data-alat-table">
+                <tr>
+                    <td style="width: 18%;"><strong>No. Pekerjaan:</strong></td>
+                    <td style="width: 32%;"><input type="text" name="no_pekerjaan"></td>
+                    <td style="width: 18%;"><strong>Nama Alat:</strong></td>
+                    <td style="width: 32%;"><input type="text" name="nama_alat"></td>
+                </tr>
+                <tr>
+                    <td><strong>Merk:</strong></td>
+                    <td><input type="text" name="merk"></td>
+                    <td><strong>No. Seri:</strong></td>
+                    <td><input type="text" name="no_seri"></td>
+                </tr>
+                <tr>
+                    <td><strong>Model / Type:</strong></td>
+                    <td><input type="text" name="model_type"></td>
+                    <td><strong>Th. Pemasangan:</strong></td>
+                    <td><input type="text" name="th_pemasangan"></td>
+                </tr>
+                <tr>
+                    <td><strong>No. Aset:</strong></td>
+                    <td><input type="text" name="no_aset"></td>
+                    <td><strong>Lokasi:</strong></td>
+                    <td><input type="text" name="lokasi" value="ICU"></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Bagian 2 -->
+        <div class="section-header">Bagian 2: Hal-Hal Yang Perlu Diperhatikan</div>
+        <ol style="margin-top: 8px; padding-left: 20px; line-height: 1.5; font-size: 0.85rem;">
+            <li>Jika terjadi kontaminasi cairan tubuh/kimia, bersihkan & sterilkan dahulu alat sebelum melakukan tindakan pemeriksaan.</li>
+            <li>Kenakan perlengkapan proteksi selama melakukan pemeriksaan.</li>
+            <li>Kenakan gelang antistatik dalam menangani PCB atau komponen elektronika.</li>
+            <li>Dalam penanganan alat mengacu pada buku pedoman yang dikeluarkan pabrik.</li>
+            <li>Pastikan alat-alat uji yang digunakan telah terkalibrasi.</li>
+        </ol>
+
+        <!-- Bagian 3 -->
+        <div class="section-header">Bagian 3: Uji Kelengkapan Aksesoris</div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Kelengkapan</th>
+                        <th style="width: 140px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Pressure Meter / Manset / Battery / Accessories</td>
+                        <td>
+                            <select name="status_kelengkapan_1">
+                                <option value="Ya">Ada / Ya</option>
+                                <option value="Tidak">Tidak Ada / Tidak</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Test Lungs / Spiral Tube / Pole Clamp / Solution Bottle</td>
+                        <td>
+                            <select name="status_kelengkapan_2">
+                                <option value="Ya">Ada / Ya</option>
+                                <option value="Tidak">Tidak Ada / Tidak</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Patient Circuit / Bulb Tensimeter / Kabel Daya / Masker</td>
+                        <td>
+                            <select name="status_kelengkapan_3">
+                                <option value="Ya">Ada / Ya</option>
+                                <option value="Tidak">Tidak Ada / Tidak</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Gas Cylinder / Tabung Kaca / Drip Sensor / Selang Masker</td>
+                        <td>
+                            <select name="status_kelengkapan_4">
+                                <option value="Ya">Ada / Ya</option>
+                                <option value="Tidak">Tidak Ada / Tidak</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>O2 Sensor / Filter / Y-piece / Humidifier / Heater Wire / Sensor Temp</td>
+                        <td>
+                            <select name="status_kelengkapan_5">
+                                <option value="Ya">Ada / Ya</option>
+                                <option value="Tidak">Tidak Ada / Tidak</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bagian 4 -->
+        <div class="section-header">Bagian 4: Pemeriksaan Kondisi Fisik & Fungsi Komponen</div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter Pemeriksaan</th>
+                        <th style="width: 140px;">Hasil Kondisi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Chasis/Selungkup - Periksa secara keseluruhan kebersihan alat</td>
+                        <td>
+                            <select name="kondisi_chasis">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Penyangga/Penguat - Periksa secara keseluruhan fisik penyangga alat</td>
+                        <td>
+                            <select name="kondisi_penyangga">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Pengereman - Periksa sistem pengereman alat</td>
+                        <td>
+                            <select name="kondisi_pengereman">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Kabel Catu Daya - Periksa bagian pengkabelan dan catu daya alat</td>
+                        <td>
+                            <select name="kondisi_kabel_daya">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Kelenturan - Periksa kelenturan / elastisitas kabel</td>
+                        <td>
+                            <select name="kondisi_kelenturan">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Circuit Breaker / Sekering - Periksa kondisi sekering yang terdapat pada alat</td>
+                        <td>
+                            <select name="kondisi_sekering">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Selang/Pipa - Pastikan kondisi semua selang dan pipa terpasang baik</td>
+                        <td>
+                            <select name="kondisi_selang">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Konektor & Fitting - Periksa kondisi konektor serta fitting yang terdapat pada alat</td>
+                        <td>
+                            <select name="kondisi_konektor">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Saklar/Kontrol - Periksa sistem kontrol dari keseluruhan fungsi alat</td>
+                        <td>
+                            <select name="kondisi_saklar">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Alarm - Periksa kondisi dan fungsi sistem alarm, pastikan berfungsi baik</td>
+                        <td>
+                            <select name="kondisi_alarm">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Baterai/Charger - Periksa kondisi baterai serta charger, pastikan berfungsi baik</td>
+                        <td>
+                            <select name="kondisi_baterai">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Indikator/Display - Periksa keseluruhan kondisi dan fungsi indikator dari alat</td>
+                        <td>
+                            <select name="kondisi_display">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Motor/Pompa/Fan/Kompresor - Periksa kondisinya dan pastikan berfungsi baik</td>
+                        <td>
+                            <select name="kondisi_motor">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Pengukuran tegangan output dan tegangan input alat</td>
+                        <td>
+                            <select name="kondisi_tegangan">
+                                <option value="Baik">Baik</option>
+                                <option value="Tidak Baik">Tidak Baik</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bagian 5 -->
+        <div class="section-header">Bagian 5: Kesimpulan dan Pengesahan</div>
+        <div class="table-responsive">
+            <table>
+                <tr>
+                    <td style="width: 30%;"><strong>Hasil Pemantauan Kinerja Alat:</strong></td>
+                    <td>
+                        <select name="kesimpulan_kinerja">
+                            <option value="Layak Pakai">Layak Pakai</option>
+                            <option value="Tidak Layak Pakai">Tidak Layak Pakai</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Catatan:</strong></td>
+                    <td><textarea name="catatan" rows="2" placeholder="Masukkan catatan hasil pemeliharaan..."></textarea></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 10px;">
+            <table>
+                <tr>
+                    <td><strong>Tgl Pelaksanaan:</strong></td>
+                    <td><input type="date" name="tgl_pelaksanaan"></td>
+                    <td><strong>Waktu Mulai:</strong></td>
+                    <td><input type="time" name="waktu_mulai"></td>
+                    <td><strong>Waktu Selesai:</strong></td>
+                    <td><input type="time" name="waktu_selesai"></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Drawing TTD (Selalu 2 Kolom Sejajar Saat Cetak) -->
+        <div class="signature-grid">
+            <div class="signature-card">
+                <h4>TTD User</h4>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasUser"></canvas>
+                </div>
+                <button type="button" class="btn-clear" onclick="clearCanvas('canvasUser', 'ttd_user_data')">Hapus TTD</button>
+                <input type="hidden" name="ttd_user_data" id="ttd_user_data">
+                <div style="margin-top: 8px; text-align: left;">
+                    <strong>Nama User:</strong>
+                    <input type="text" name="nama_user" placeholder="Nama lengkap user">
+                </div>
+            </div>
+
+            <div class="signature-card">
+                <h4>TTD Engineer</h4>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasEngineer"></canvas>
+                </div>
+                <button type="button" class="btn-clear" onclick="clearCanvas('canvasEngineer', 'ttd_engineer_data')">Hapus TTD</button>
+                <input type="hidden" name="ttd_engineer_data" id="ttd_engineer_data">
+                <div style="margin-top: 8px; text-align: left;">
+                    <strong>Nama Engineer:</strong>
+                    <input type="text" name="nama_engineer" value="Rega Kurniawan, A.Md">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Simpan Form Maintenance</button>
+    </form>
+</div>
+
+<script>
+    function setupCanvas(canvasId, inputHiddenId) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const inputHidden = document.getElementById(inputHiddenId);
+        let isDrawing = false;
+
+        function resizeCanvas() {
+            const containerWidth = canvas.parentElement.clientWidth;
+            canvas.width = containerWidth > 0 ? containerWidth : 300;
+            canvas.height = 120;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000000';
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            saveSignature();
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.beginPath();
+                saveSignature();
+            }
+        }
+
+        function saveSignature() {
+            inputHidden.value = canvas.toDataURL();
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+    }
+
+    function clearCanvas(canvasId, inputHiddenId) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById(inputHiddenId).value = '';
+    }
+
+    window.onload = function() {
+        setupCanvas('canvasUser', 'ttd_user_data');
+        setupCanvas('canvasEngineer', 'ttd_engineer_data');
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+
+{% block title %}Form Pemeliharaan Preventif Alkes{% endblock %}
+
+{% block content %}
+<main class="workspace">
+    <header class="top-header">
+        <div class="top-title" id="pageTitle">
+            Lembar Kerja Maintenance Preventif Alkes — <span id="currentCategoryBadge" style="color: var(--accent);">{% if current_category %}{{ current_category.name }}{% else %}Umum{% endif %}</span>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'maintenance:list' %}" class="btn-action" style="background: #64748b; color: white; padding: 8px 14px; font-size: 0.85rem; text-decoration: none;">
+                📜 Riwayat Work Order
+            </a>
+            <a id="btnStandaloneHtml" target="_blank" href="{% if current_category and current_category.slug %}{% url 'maintenance:category_form_html' current_category.slug %}{% else %}#{% endif %}" class="btn-action" style="background: #1e293b; color: white; padding: 8px 14px; font-size: 0.85rem; text-decoration: none;">
+                📄 Format Standalone (HTML)
+            </a>
+            <button type="button" class="btn-action btn-primary btn-pdf" onclick="window.print()" style="padding: 8px 16px; font-size: 0.85rem;">
+                🖨️ Cetak Lembar Kerja
+            </button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Equipment & Category Selector Bar -->
+        <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); padding: 16px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                <!-- 1. Asset Picker -->
+                <div style="flex: 1; min-width: 280px;">
+                    <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-main);">
+                        🩺 1. Pilih Alat Kesehatan dari Database:
+                    </label>
+                    <select id="assetPicker" onchange="onAssetSelected(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.85rem; background: white;">
+                        <option value="">-- Pilih Alat Terdaftar (Opsional) --</option>
+                        {% for a in all_assets %}
+                        <option value="{{ a.id }}" {% if selected_asset and selected_asset.id == a.id %}selected{% endif %}>
+                            [{{ a.code }}] {{ a.name }} - {{ a.full_brand }} ({{ a.location }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 2. Category Picker -->
+                <div style="flex: 1; min-width: 280px;">
+                    <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-main);">
+                        📂 2. Kategori Form Maintenance (Menyesuaikan Checklist):
+                    </label>
+                    <select id="categoryPicker" onchange="onCategoryChanged(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.85rem; background: #f8fafc; font-weight: 600; color: var(--accent);">
+                        {% for c in categories %}
+                        <option value="{{ c.id }}" {% if current_category and current_category.id == c.id %}selected{% endif %}>
+                            📋 {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+                <span>💡 <em>Memilih alat akan otomatis mencocokkan kategori dan checklist pemeliharaan di bawah.</em></span>
+                <a href="{% url 'assets:view' %}" style="color: var(--accent); text-decoration: none; font-weight: 500;">
+                    🔍 Buka Katalog Aset &rarr;
+                </a>
+            </div>
+        </div>
+
+        <section id="formView" class="view-section active">
+            <div class="form-paper" style="background: white; max-width: 900px; margin: 0 auto; padding: 35px 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="header-kop" style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.05rem; color: var(--text-muted); text-transform: uppercase;">Instalasi Pemeliharaan Sarana Rumah Sakit (IPSRS)</h3>
+                    <h2 style="font-size: 1.35rem; color: var(--primary); margin: 6px 0;">Lembar Tugas Pemeliharaan Peralatan Medik</h2>
+                    <h4 style="font-size: 0.95rem; font-weight: normal; color: var(--text-muted);">
+                        RSI Gunungkidul — Kategori: <strong id="headerCategoryText" style="color: var(--accent);">{% if current_category %}{{ current_category.name }}{% else %}Umum{% endif %}</strong>
+                    </h4>
+                    <div style="height: 2px; background: var(--primary); margin-top: 12px;"></div>
+                </div>
+
+                <form id="maintenanceForm" onsubmit="event.preventDefault(); saveMaintenanceForm();">
+                    {% csrf_token %}
+                    <input type="hidden" id="form_asset_id" value="{{ selected_asset.id|default:'' }}">
+                    <input type="hidden" id="form_category_id" value="{% if current_category %}{{ current_category.id }}{% endif %}">
+                    <input type="hidden" id="form_category_name" value="{% if current_category %}{{ current_category.name }}{% endif %}">
+
+                    <!-- Bagian 1: Data Alat -->
+                    <div class="form-section-title" style="background-color: #1a4a72; color: white; padding: 6px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; margin-top: 15px;">
+                        Bagian 1: Data Alat
+                    </div>
+                    <table class="table-form data-alat-table" style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                        <tr>
+                            <td style="width: 18%; padding: 6px 10px; border: 1px solid #ccc;"><strong>No. Pekerjaan:</strong></td>
+                            <td style="width: 32%; padding: 6px 10px; border: 1px solid #ccc;">
+                                <input type="text" id="form_wo_no" value="{{ default_wo }}" readonly style="background: #f8fafc; font-weight: bold;">
+                            </td>
+                            <td style="width: 18%; padding: 6px 10px; border: 1px solid #ccc;"><strong>Nama Alat:</strong></td>
+                            <td style="width: 32%; padding: 6px 10px; border: 1px solid #ccc;">
+                                <input type="text" id="form_nama_alat" value="{% if selected_asset %}{{ selected_asset.name }}{% elif current_category %}{{ current_category.name }}{% endif %}" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>Merk:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><input type="text" id="form_merk" value="{{ selected_asset.brand|default:'' }}" placeholder="Merk Alat"></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>No. Seri:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><input type="text" id="form_no_seri" value="{{ selected_asset.serial_number|default:'' }}" placeholder="Nomor Seri" required></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>Model / Type:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><input type="text" id="form_model" value="{{ selected_asset.model_type|default:'' }}" placeholder="Tipe / Model"></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>Th. Pemasangan:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><input type="text" id="form_th_pasang" value="{{ selected_asset.installation_year|default:'2023' }}"></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>No. Aset / Tag:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><input type="text" id="form_no_aset" value="{{ selected_asset.code|default:'' }}" placeholder="Contoh: AST-ICU-001" required></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>Lokasi / Ruangan:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;">
+                                <select id="form_lokasi" style="width: 100%; padding: 4px;">
+                                    <option value="Ruang ICU" {% if selected_asset and selected_asset.location == 'Ruang ICU' %}selected{% endif %}>Ruang ICU</option>
+                                    <option value="Kamar Bedah (OK)" {% if selected_asset and 'OK' in selected_asset.location %}selected{% endif %}>Kamar Bedah (OK)</option>
+                                    <option value="IGD" {% if selected_asset and selected_asset.location == 'IGD' %}selected{% endif %}>IGD</option>
+                                    <option value="Poliklinik" {% if selected_asset and 'Poli' in selected_asset.location %}selected{% endif %}>Poliklinik</option>
+                                    <option value="Rawat Inap" {% if selected_asset and 'Rawat' in selected_asset.location %}selected{% endif %}>Rawat Inap</option>
+                                    <option value="Radiologi" {% if selected_asset and 'Radio' in selected_asset.location %}selected{% endif %}>Radiologi</option>
+                                    <option value="Laboratorium" {% if selected_asset and 'Lab' in selected_asset.location %}selected{% endif %}>Laboratorium</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Bagian 2: Catatan K3 / Pedoman -->
+                    <div class="form-section-title" style="background-color: #1a4a72; color: white; padding: 6px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; margin-top: 15px;">
+                        Bagian 2: Hal-Hal Yang Perlu Diperhatikan (K3 &amp; Pedoman)
+                    </div>
+                    <ol class="k3-list" id="k3ListContainer" style="margin-top: 8px; padding-left: 20px; font-size: 0.85rem; line-height: 1.55; color: var(--text-muted);">
+                        {% if current_category and current_category.k3_notes %}
+                            {% for note in current_category.k3_notes %}
+                                <li>{{ note }}</li>
+                            {% endfor %}
+                        {% else %}
+                            <li>Jika terjadi kontaminasi cairan tubuh/kimia, bersihkan &amp; sterilkan dahulu alat sebelum pemeriksaan.</li>
+                            <li>Kenakan perlengkapan proteksi APD selama pemeliharaan.</li>
+                            <li>Kenakan gelang antistatik saat menangani PCB/komponen elektronika.</li>
+                            <li>Mengacu pada buku pedoman pabrik pembuat alat.</li>
+                            <li>Pastikan alat ukur/uji yang digunakan telah terkalibrasi.</li>
+                        {% endif %}
+                    </ol>
+
+                    <!-- Bagian 3: Uji Kelengkapan Aksesoris -->
+                    <div class="form-section-title" style="background-color: #1a4a72; color: white; padding: 6px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; margin-top: 15px;">
+                        Bagian 3: Uji Kelengkapan Aksesoris
+                    </div>
+                    <table class="table-form" id="tableAccessories" style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 6px 10px; border: 1px solid #ccc; text-align: left;">Item Kelengkapan</th>
+                                <th style="width: 140px; padding: 6px 10px; border: 1px solid #ccc; text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accessoriesTbody">
+                            {% if current_category and current_category.accessories_template %}
+                                {% for item in current_category.accessories_template %}
+                                <tr>
+                                    <td style="padding: 6px 10px; border: 1px solid #ccc;">{{ forloop.counter }}. {{ item }}</td>
+                                    <td style="padding: 6px 10px; border: 1px solid #ccc; text-align: center;">
+                                        <select style="width: 100%; padding: 4px;" data-item="{{ item }}">
+                                            <option value="Ada / Ya">Ada / Ya</option>
+                                            <option value="Tidak">Tidak</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="2" style="padding: 10px; text-align: center; color: #64748b; border: 1px solid #ccc;">
+                                        (Tidak ada aksesoris khusus yang dipersyaratkan untuk alat ini)
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+
+                    <!-- Bagian 4: Pemeriksaan Kondisi Fisik & Fungsi -->
+                    <div class="form-section-title" style="background-color: #1a4a72; color: white; padding: 6px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; margin-top: 15px;">
+                        Bagian 4: Pemeriksaan Kondisi Fisik &amp; Fungsi Komponen Alat
+                    </div>
+                    <table class="table-form" id="tablePhysical" style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 6px 10px; border: 1px solid #ccc; text-align: left;">Parameter Pemeriksaan</th>
+                                <th style="width: 140px; padding: 6px 10px; border: 1px solid #ccc; text-align: center;">Hasil Kondisi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="physicalTbody">
+                            {% if current_category and current_category.inspection_template %}
+                                {% for param in current_category.inspection_template %}
+                                <tr>
+                                    <td style="padding: 6px 10px; border: 1px solid #ccc;">{{ forloop.counter }}. {{ param }}</td>
+                                    <td style="padding: 6px 10px; border: 1px solid #ccc; text-align: center;">
+                                        <select style="width: 100%; padding: 4px;" data-param="{{ param }}">
+                                            <option value="Baik">Baik</option>
+                                            <option value="Tidak Baik">Tidak Baik</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+
+                    <!-- Bagian 5: Kesimpulan & Pengesahan -->
+                    <div class="form-section-title" style="background-color: #1a4a72; color: white; padding: 6px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; margin-top: 15px;">
+                        Bagian 5: Kesimpulan &amp; Pengesahan
+                    </div>
+                    <table class="table-form" style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                        <tr>
+                            <td style="width: 30%; padding: 6px 10px; border: 1px solid #ccc;"><strong>Hasil Kinerja Alat:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;">
+                                <select id="form_result_status" style="font-weight: bold; padding: 4px; width: 100%;">
+                                    <option value="Layak Pakai" style="color: var(--success);">✅ Layak Pakai</option>
+                                    <option value="Tidak Layak" style="color: var(--danger);">❌ Tidak Layak Pakai (Perbaikan)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;"><strong>Catatan Pemeliharaan:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc;">
+                                <textarea id="form_notes" rows="2" style="width: 100%; padding: 6px;" placeholder="Masukkan catatan hasil pemeliharaan...">Pemeriksaan rutin berjalan lancar, parameter fungsi bekerja dengan baik.</textarea>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="table-form" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <tr>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 15%;"><strong>Tgl Pelaksanaan:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 25%;"><input type="date" id="form_date" value="{{ today }}" style="width: 100%; padding: 4px;"></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 15%;"><strong>Waktu Mulai:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 20%;"><input type="time" id="form_start_time" value="{{ current_time }}" style="width: 100%; padding: 4px;"></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 10%;"><strong>Selesai:</strong></td>
+                            <td style="padding: 6px 10px; border: 1px solid #ccc; width: 15%;"><input type="time" id="form_end_time" value="09:30" style="width: 100%; padding: 4px;"></td>
+                        </tr>
+                    </table>
+
+                    <!-- Canvas Drawing TTD -->
+                    <div class="signature-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div class="signature-card" style="border: 1px solid #ccc; border-radius: 6px; padding: 12px; text-align: center;">
+                            <h4 style="font-size: 0.9rem; margin-bottom: 6px;">TTD User Ruangan</h4>
+                            <div style="background: #fafafa; border: 1px dashed #ccc; border-radius: 4px; margin-bottom: 6px;">
+                                <canvas id="canvasUser" style="width: 100%; height: 110px;"></canvas>
+                            </div>
+                            <button type="button" class="btn-clear" onclick="clearCanvas('canvasUser', 'ttd_user_data')" style="padding: 4px 10px; font-size: 0.75rem; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Hapus TTD</button>
+                            <input type="hidden" id="ttd_user_data">
+                            <div style="margin-top: 8px; text-align: left;">
+                                <strong style="font-size: 0.8rem;">Nama User Ruangan:</strong>
+                                <input type="text" id="form_user_name" placeholder="Nama Perawat / Ka. Ruangan" style="padding: 4px 8px; font-size: 0.82rem; width: 100%; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                        </div>
+
+                        <div class="signature-card" style="border: 1px solid #ccc; border-radius: 6px; padding: 12px; text-align: center;">
+                            <h4 style="font-size: 0.9rem; margin-bottom: 6px;">TTD Engineer IPSRS</h4>
+                            <div style="background: #fafafa; border: 1px dashed #ccc; border-radius: 4px; margin-bottom: 6px;">
+                                <canvas id="canvasEngineer" style="width: 100%; height: 110px;"></canvas>
+                            </div>
+                            <button type="button" class="btn-clear" onclick="clearCanvas('canvasEngineer', 'ttd_engineer_data')" style="padding: 4px 10px; font-size: 0.75rem; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Hapus TTD</button>
+                            <input type="hidden" id="ttd_engineer_data">
+                            <div style="margin-top: 8px; text-align: left;">
+                                <strong style="font-size: 0.8rem;">Nama Engineer IPSRS:</strong>
+                                <input type="text" id="form_engineer_name" value="{{ request.user.get_full_name|default:request.user.username }}" style="padding: 4px 8px; font-size: 0.82rem; width: 100%; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-action btn-primary btn-submit" style="width: 100%; margin-top: 25px; padding: 12px; font-size: 1rem; border-radius: 6px; cursor: pointer;">
+                        💾 Simpan Lembar Pemeliharaan Preventif
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Kamus template kategori dari database
+    const CATEGORY_TEMPLATES = {{ category_templates_json|safe }};
+
+    // Data aset terdaftar untuk pre-fill cepat
+    const ASSETS_DATA = {
+        {% for a in all_assets %}
+        "{{ a.id }}": {
+            id: "{{ a.id }}",
+            code: "{{ a.code }}",
+            name: "{{ a.name }}",
+            brand: "{{ a.brand|default:'' }}",
+            model: "{{ a.model_type|default:'' }}",
+            sn: "{{ a.serial_number|default:'' }}",
+            year: "{{ a.installation_year|default:'' }}",
+            location: "{{ a.location|default:'' }}",
+            categoryId: "{{ a.category.id|default:'' }}",
+            categoryName: "{{ a.category.name|default:'' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    function getCsrfToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Handler ketika memilih Alat di dropdown 1
+    function onAssetSelected(assetId) {
+        if (!assetId) {
+            document.getElementById('form_asset_id').value = '';
+            return;
+        }
+
+        const a = ASSETS_DATA[assetId];
+        if (!a) return;
+
+        document.getElementById('form_asset_id').value = a.id;
+        document.getElementById('form_no_aset').value = a.code;
+        document.getElementById('form_nama_alat').value = a.name;
+        document.getElementById('form_merk').value = a.brand;
+        document.getElementById('form_no_seri').value = a.sn;
+        document.getElementById('form_model').value = a.model;
+        document.getElementById('form_th_pasang').value = a.year;
+        document.getElementById('form_lokasi').value = a.location;
+
+        // Otomatis sinkronkan Kategori Alkes jika alat tersebut punya kategori
+        if (a.categoryId && CATEGORY_TEMPLATES[a.categoryId]) {
+            document.getElementById('categoryPicker').value = a.categoryId;
+            applyCategoryTemplate(a.categoryId);
+        } else {
+            // Coba cari nama kategori yang cocok dengan nama alat
+            for (let cId in CATEGORY_TEMPLATES) {
+                if (CATEGORY_TEMPLATES[cId].name.toLowerCase().includes(a.name.toLowerCase()) || 
+                    a.name.toLowerCase().includes(CATEGORY_TEMPLATES[cId].name.toLowerCase())) {
+                    document.getElementById('categoryPicker').value = cId;
+                    applyCategoryTemplate(cId);
+                    break;
+                }
+            }
+        }
+    }
+
+    // Handler ketika mengganti Kategori Alkes di dropdown 2
+    function onCategoryChanged(catId) {
+        applyCategoryTemplate(catId);
+    }
+
+    // Render ulang checklist Bagian 2, 3, dan 4 secara instan sesuai template kategori
+    function applyCategoryTemplate(catId) {
+        const cat = CATEGORY_TEMPLATES[catId];
+        if (!cat) return;
+
+        // 1. Update Badge dan Title
+        document.getElementById('currentCategoryBadge').textContent = cat.name;
+        document.getElementById('headerCategoryText').textContent = cat.name;
+        document.getElementById('form_category_id').value = cat.id;
+        document.getElementById('form_category_name').value = cat.name;
+
+        // 2. Update Tombol Format Standalone HTML
+        const btnHtml = document.getElementById('btnStandaloneHtml');
+        if (btnHtml) {
+            btnHtml.href = `/maintenance/form/${cat.slug}/`;
+        }
+
+        // Jika belum ada alat yang dipilih, set nama alat default ke kategori ini
+        if (!document.getElementById('form_asset_id').value) {
+            document.getElementById('form_nama_alat').value = cat.name;
+            const prefix = cat.name.substring(0, 3).toUpperCase();
+            document.getElementById('form_wo_no').value = `WO-${prefix}-${Date.now().toString().slice(-6)}`;
+        }
+
+        // 3. Render Ulang Bagian 2: K3 Notes
+        const k3Container = document.getElementById('k3ListContainer');
+        if (cat.k3 && cat.k3.length > 0) {
+            k3Container.innerHTML = cat.k3.map(item => `<li>${item}</li>`).join('');
+        } else {
+            k3Container.innerHTML = `
+                <li>Jika terjadi kontaminasi cairan tubuh/kimia, bersihkan & sterilkan dahulu alat sebelum pemeriksaan.</li>
+                <li>Kenakan perlengkapan proteksi APD selama pemeliharaan.</li>
+                <li>Kenakan gelang antistatik saat menangani PCB/komponen elektronika.</li>
+                <li>Mengacu pada buku pedoman pabrik pembuat alat.</li>
+                <li>Pastikan alat ukur/uji yang digunakan telah terkalibrasi.</li>
+            `;
+        }
+
+        // 4. Render Ulang Bagian 3: Aksesoris (Disesuaikan khusus alat ini)
+        const accTbody = document.getElementById('accessoriesTbody');
+        if (cat.accessories && cat.accessories.length > 0) {
+            accTbody.innerHTML = cat.accessories.map((item, idx) => `
+                <tr>
+                    <td style="padding: 6px 10px; border: 1px solid #ccc;">${idx + 1}. ${item}</td>
+                    <td style="padding: 6px 10px; border: 1px solid #ccc; text-align: center;">
+                        <select style="width: 100%; padding: 4px;" data-item="${item}">
+                            <option value="Ada / Ya">Ada / Ya</option>
+                            <option value="Tidak">Tidak</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            accTbody.innerHTML = `
+                <tr>
+                    <td colspan="2" style="padding: 10px; text-align: center; color: #64748b; border: 1px solid #ccc;">
+                        (Tidak ada aksesoris khusus yang dipersyaratkan untuk alat ${cat.name})
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 5. Render Ulang Bagian 4: Pemeriksaan Fisik & Fungsi Komponen
+        const physTbody = document.getElementById('physicalTbody');
+        if (cat.inspections && cat.inspections.length > 0) {
+            physTbody.innerHTML = cat.inspections.map((param, idx) => `
+                <tr>
+                    <td style="padding: 6px 10px; border: 1px solid #ccc;">${idx + 1}. ${param}</td>
+                    <td style="padding: 6px 10px; border: 1px solid #ccc; text-align: center;">
+                        <select style="width: 100%; padding: 4px;" data-param="${param}">
+                            <option value="Baik">Baik</option>
+                            <option value="Tidak Baik">Tidak Baik</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            physTbody.innerHTML = `
+                <tr>
+                    <td colspan="2" style="padding: 10px; text-align: center; color: #64748b; border: 1px solid #ccc;">
+                        (Belum ada parameter fungsi khusus yang didaftarkan)
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Setup Canvas TTD Handler
+    function setupCanvas(canvasId, inputHiddenId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const inputHidden = document.getElementById(inputHiddenId);
+        let isDrawing = false;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width > 0 ? rect.width : 320;
+            canvas.height = 110;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000000';
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+            }
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            inputHidden.value = canvas.toDataURL();
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.beginPath();
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+    }
+
+    function clearCanvas(canvasId, inputHiddenId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById(inputHiddenId).value = '';
+    }
+
+    // Save Maintenance Form to Backend
+    function saveMaintenanceForm() {
+        const woNo = document.getElementById('form_wo_no').value.trim();
+        const assetId = document.getElementById('form_asset_id').value;
+        const assetCode = document.getElementById('form_no_aset').value.trim();
+        const assetName = document.getElementById('form_nama_alat').value.trim();
+        const brand = document.getElementById('form_merk').value.trim();
+        const sn = document.getElementById('form_no_seri').value.trim();
+        const model = document.getElementById('form_model').value.trim();
+        const year = document.getElementById('form_th_pasang').value.trim();
+        const location = document.getElementById('form_lokasi').value;
+        const categoryName = document.getElementById('form_category_name').value;
+
+        if (!assetCode || !assetName || !sn) {
+            alert('Harap isi No. Aset, Nama Alat, dan Nomor Seri alat!');
+            return;
+        }
+
+        const dateVal = document.getElementById('form_date').value;
+        const startTime = document.getElementById('form_start_time').value;
+        const endTime = document.getElementById('form_end_time').value;
+        const resultStatus = document.getElementById('form_result_status').value;
+        const notes = document.getElementById('form_notes').value;
+        const userName = document.getElementById('form_user_name').value;
+        const engName = document.getElementById('form_engineer_name').value;
+
+        // Ambil data checklist aksesoris dinamis
+        const accessoriesCheck = {};
+        document.querySelectorAll('#tableAccessories tbody tr').forEach(tr => {
+            const select = tr.querySelector('select');
+            if (select) {
+                const item = select.getAttribute('data-item') || tr.children[0].textContent.trim();
+                accessoriesCheck[item] = select.value;
+            }
+        });
+
+        // Ambil data checklist pemeriksaan fisik & fungsi dinamis
+        const physicalCheck = {};
+        document.querySelectorAll('#tablePhysical tbody tr').forEach(tr => {
+            const select = tr.querySelector('select');
+            if (select) {
+                const param = select.getAttribute('data-param') || tr.children[0].textContent.trim();
+                physicalCheck[param] = select.value;
+            }
+        });
+
+        const sigUser = document.getElementById('ttd_user_data').value;
+        const sigEng = document.getElementById('ttd_engineer_data').value;
+
+        const payload = {
+            asset_id: assetId || null,
+            code: assetCode,
+            name: assetName,
+            brand: brand,
+            model_type: model,
+            sn: sn,
+            location: location,
+            installation_year: year,
+            category_name: categoryName,
+            wo_no: woNo,
+            date: dateVal,
+            start_time: startTime || null,
+            end_time: endTime || null,
+            result_status: resultStatus,
+            notes: notes,
+            accessories_check: accessoriesCheck,
+            physical_check: physicalCheck,
+            signature_user: sigUser,
+            signature_user_name: userName,
+            signature_engineer: sigEng,
+            signature_engineer_name: engName
+        };
+
+        fetch('{% url "maintenance:save_preventive" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                if (data.record_id) {
+                    window.location.href = '/maintenance/' + data.record_id + '/';
+                } else {
+                    window.location.href = '{% url "maintenance:list" %}';
+                }
+            } else {
+                alert('Gagal menyimpan form: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error saving preventive maintenance:", err);
+            alert('Terjadi kesalahan koneksi saat menyimpan lembar kerja pemeliharaan!');
+        });
+    }
+
+    window.addEventListener('load', function() {
+        setupCanvas('canvasUser', 'ttd_user_data');
+        setupCanvas('canvasEngineer', 'ttd_engineer_data');
+
+        // Jika saat load awal ada kategori yang dipilih, pastikan template diterapkan
+        const currentCatId = document.getElementById('categoryPicker').value;
+        if (currentCatId) {
+            applyCategoryTemplate(currentCatId);
+        }
+    });
+</script>
+{% endblock %}
